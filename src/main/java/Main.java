@@ -1,8 +1,10 @@
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -87,6 +89,23 @@ public class Main {
         return tokens;
     }
 
+    private static void writeToFile(String file, String content, boolean append)
+            throws IOException {
+
+        OpenOption[] options = append
+                ? new OpenOption[] {
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND
+                }
+                : new OpenOption[] {
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE
+                };
+
+        Files.writeString(Paths.get(file), content, options);
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         Scanner scanner = new Scanner(System.in);
 
@@ -102,6 +121,8 @@ public class Main {
 
             String stdoutFile = null;
             String stderrFile = null;
+            boolean appendStdout = false;
+
             List<String> commandParts = new ArrayList<>();
 
             for (int i = 0; i < parts.size(); i++) {
@@ -109,6 +130,10 @@ public class Main {
 
                 if ((token.equals(">") || token.equals("1>")) && i + 1 < parts.size()) {
                     stdoutFile = parts.get(++i);
+                    appendStdout = false;
+                } else if ((token.equals(">>") || token.equals("1>>")) && i + 1 < parts.size()) {
+                    stdoutFile = parts.get(++i);
+                    appendStdout = true;
                 } else if (token.equals("2>") && i + 1 < parts.size()) {
                     stderrFile = parts.get(++i);
                 } else {
@@ -130,15 +155,15 @@ public class Main {
 
             if (command.equals("pwd")) {
                 if (stderrFile != null) {
-                    Files.writeString(Paths.get(stderrFile), "");
+                    writeToFile(stderrFile, "", false);
                 }
 
-                String output = currentDirectory.toString();
+                String output = currentDirectory + "\n";
 
                 if (stdoutFile != null) {
-                    Files.writeString(Paths.get(stdoutFile), output + "\n");
+                    writeToFile(stdoutFile, output, appendStdout);
                 } else {
-                    System.out.println(output);
+                    System.out.print(output);
                 }
 
                 continue;
@@ -163,15 +188,15 @@ public class Main {
                     currentDirectory = newPath;
 
                     if (stderrFile != null) {
-                        Files.writeString(Paths.get(stderrFile), "");
+                        writeToFile(stderrFile, "", false);
                     }
                 } else {
-                    String error = "cd: " + target + ": No such file or directory";
+                    String error = "cd: " + target + ": No such file or directory\n";
 
                     if (stderrFile != null) {
-                        Files.writeString(Paths.get(stderrFile), error + "\n");
+                        writeToFile(stderrFile, error, false);
                     } else {
-                        System.err.println(error);
+                        System.err.print(error);
                     }
                 }
 
@@ -180,17 +205,17 @@ public class Main {
 
             if (command.equals("echo")) {
                 if (stderrFile != null) {
-                    Files.writeString(Paths.get(stderrFile), "");
+                    writeToFile(stderrFile, "", false);
                 }
 
-                String output = parts.size() > 1
+                String output = (parts.size() > 1
                         ? String.join(" ", parts.subList(1, parts.size()))
-                        : "";
+                        : "") + "\n";
 
                 if (stdoutFile != null) {
-                    Files.writeString(Paths.get(stdoutFile), output + "\n");
+                    writeToFile(stdoutFile, output, appendStdout);
                 } else {
-                    System.out.println(output);
+                    System.out.print(output);
                 }
 
                 continue;
@@ -198,28 +223,28 @@ public class Main {
 
             if (command.equals("type")) {
                 if (stderrFile != null) {
-                    Files.writeString(Paths.get(stderrFile), "");
+                    writeToFile(stderrFile, "", false);
                 }
 
                 String target = parts.get(1);
                 String output;
 
                 if (isBuiltin(target)) {
-                    output = target + " is a shell builtin";
+                    output = target + " is a shell builtin\n";
                 } else {
                     String executable = findExecutable(target);
 
                     if (executable != null) {
-                        output = target + " is " + executable;
+                        output = target + " is " + executable + "\n";
                     } else {
-                        output = target + ": not found";
+                        output = target + ": not found\n";
                     }
                 }
 
                 if (stdoutFile != null) {
-                    Files.writeString(Paths.get(stdoutFile), output + "\n");
+                    writeToFile(stdoutFile, output, appendStdout);
                 } else {
-                    System.out.println(output);
+                    System.out.print(output);
                 }
 
                 continue;
@@ -233,7 +258,12 @@ public class Main {
                 processBuilder.directory(currentDirectory.toFile());
 
                 if (stdoutFile != null) {
-                    processBuilder.redirectOutput(new File(stdoutFile));
+                    File file = new File(stdoutFile);
+
+                    processBuilder.redirectOutput(
+                            appendStdout
+                                    ? ProcessBuilder.Redirect.appendTo(file)
+                                    : ProcessBuilder.Redirect.to(file));
                 } else {
                     processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
                 }
@@ -247,12 +277,12 @@ public class Main {
                 Process process = processBuilder.start();
                 process.waitFor();
             } else {
-                String error = command + ": command not found";
+                String error = command + ": command not found\n";
 
                 if (stderrFile != null) {
-                    Files.writeString(Paths.get(stderrFile), error + "\n");
+                    writeToFile(stderrFile, error, false);
                 } else {
-                    System.err.println(error);
+                    System.err.print(error);
                 }
             }
         }
