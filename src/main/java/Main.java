@@ -167,7 +167,10 @@ public class Main {
             String executable = findExecutable(command);
 
             if (executable != null) {
-                ProcessBuilder processBuilder = new ProcessBuilder(parts);
+                List<String> processArgs = new ArrayList<>(parts);
+                processArgs.set(0, executable);
+
+                ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
 
                 processBuilder.directory(currentDirectory.toFile());
                 processBuilder.inheritIO();
