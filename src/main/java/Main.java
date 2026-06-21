@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -7,11 +8,15 @@ import java.util.Scanner;
 
 public class Main {
 
+    private static Path currentDirectory =
+            Paths.get(System.getProperty("user.dir"));
+
     private static boolean isBuiltin(String command) {
         return command.equals("echo")
                 || command.equals("exit")
                 || command.equals("type")
-                || command.equals("pwd");
+                || command.equals("pwd")
+                || command.equals("cd");
     }
 
     private static String findExecutable(String command) {
@@ -37,8 +42,6 @@ public class Main {
     public static void main(String[] args) throws IOException, InterruptedException {
         Scanner scanner = new Scanner(System.in);
 
-        Path currentDirectory = Paths.get(System.getProperty("user.dir"));
-
         while (true) {
             System.out.print("$ ");
 
@@ -50,6 +53,19 @@ public class Main {
 
             if (input.equals("pwd")) {
                 System.out.println(currentDirectory.toAbsolutePath());
+                continue;
+            }
+
+            if (input.startsWith("cd ")) {
+                String target = input.substring(3).trim();
+                Path newPath = Paths.get(target);
+
+                if (Files.isDirectory(newPath)) {
+                    currentDirectory = newPath.toAbsolutePath().normalize();
+                } else {
+                    System.out.println("cd: " + target + ": No such file or directory");
+                }
+
                 continue;
             }
 
@@ -83,6 +99,7 @@ public class Main {
                 ProcessBuilder processBuilder =
                         new ProcessBuilder(Arrays.asList(parts));
 
+                processBuilder.directory(currentDirectory.toFile());
                 processBuilder.inheritIO();
 
                 Process process = processBuilder.start();
