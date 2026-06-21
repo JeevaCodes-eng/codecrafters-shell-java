@@ -27,9 +27,7 @@ public class Main {
             return null;
         }
 
-        String[] directories = path.split(File.pathSeparator);
-
-        for (String directory : directories) {
+        for (String directory : path.split(File.pathSeparator)) {
             File file = new File(directory, command);
 
             if (file.exists() && file.canExecute()) {
@@ -42,19 +40,25 @@ public class Main {
 
     private static List<String> parseInput(String input) {
         List<String> tokens = new ArrayList<>();
-
         StringBuilder current = new StringBuilder();
+
         boolean inSingleQuotes = false;
+        boolean inDoubleQuotes = false;
 
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
 
-            if (c == '\'') {
+            if (c == '\'' && !inDoubleQuotes) {
                 inSingleQuotes = !inSingleQuotes;
                 continue;
             }
 
-            if (c == ' ' && !inSingleQuotes) {
+            if (c == '"' && !inSingleQuotes) {
+                inDoubleQuotes = !inDoubleQuotes;
+                continue;
+            }
+
+            if (Character.isWhitespace(c) && !inSingleQuotes && !inDoubleQuotes) {
                 if (!current.isEmpty()) {
                     tokens.add(current.toString());
                     current.setLength(0);
@@ -92,7 +96,7 @@ public class Main {
             }
 
             if (command.equals("pwd")) {
-                System.out.println(currentDirectory.normalize());
+                System.out.println(currentDirectory);
                 continue;
             }
 
@@ -121,7 +125,11 @@ public class Main {
             }
 
             if (command.equals("echo")) {
-                System.out.println(String.join(" ", parts.subList(1, parts.size())));
+                if (parts.size() > 1) {
+                    System.out.println(String.join(" ", parts.subList(1, parts.size())));
+                } else {
+                    System.out.println();
+                }
                 continue;
             }
 
