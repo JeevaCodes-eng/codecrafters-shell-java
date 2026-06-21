@@ -61,7 +61,9 @@ public class Main {
 
                 Path newPath;
 
-                if (Paths.get(target).isAbsolute()) {
+                if (target.equals("~")) {
+                    newPath = Paths.get(System.getenv("HOME"));
+                } else if (Paths.get(target).isAbsolute()) {
                     newPath = Paths.get(target);
                 } else {
                     newPath = currentDirectory.resolve(target);
