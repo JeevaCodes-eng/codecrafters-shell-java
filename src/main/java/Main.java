@@ -94,7 +94,6 @@ public class Main {
             System.out.print("$ ");
 
             String input = scanner.nextLine();
-
             List<String> parts = parseInput(input);
 
             if (parts.isEmpty()) {
@@ -103,7 +102,6 @@ public class Main {
 
             String stdoutFile = null;
             String stderrFile = null;
-
             List<String> commandParts = new ArrayList<>();
 
             for (int i = 0; i < parts.size(); i++) {
@@ -131,7 +129,18 @@ public class Main {
             }
 
             if (command.equals("pwd")) {
-                System.out.println(currentDirectory);
+                if (stderrFile != null) {
+                    Files.writeString(Paths.get(stderrFile), "");
+                }
+
+                String output = currentDirectory.toString();
+
+                if (stdoutFile != null) {
+                    Files.writeString(Paths.get(stdoutFile), output + "\n");
+                } else {
+                    System.out.println(output);
+                }
+
                 continue;
             }
 
@@ -152,6 +161,10 @@ public class Main {
 
                 if (Files.isDirectory(newPath)) {
                     currentDirectory = newPath;
+
+                    if (stderrFile != null) {
+                        Files.writeString(Paths.get(stderrFile), "");
+                    }
                 } else {
                     String error = "cd: " + target + ": No such file or directory";
 
@@ -166,6 +179,10 @@ public class Main {
             }
 
             if (command.equals("echo")) {
+                if (stderrFile != null) {
+                    Files.writeString(Paths.get(stderrFile), "");
+                }
+
                 String output = parts.size() > 1
                         ? String.join(" ", parts.subList(1, parts.size()))
                         : "";
@@ -180,6 +197,10 @@ public class Main {
             }
 
             if (command.equals("type")) {
+                if (stderrFile != null) {
+                    Files.writeString(Paths.get(stderrFile), "");
+                }
+
                 String target = parts.get(1);
                 String output;
 
