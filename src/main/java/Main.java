@@ -19,7 +19,8 @@ public class Main {
                 || command.equals("exit")
                 || command.equals("type")
                 || command.equals("pwd")
-                || command.equals("cd");
+                || command.equals("cd")
+                || command.equals("jobs");
     }
 
     private static String findExecutable(String command) {
@@ -255,6 +256,14 @@ public class Main {
                     writeToFile(stdoutFile, output, appendStdout);
                 } else {
                     System.out.print(output);
+                }
+
+                continue;
+            }
+
+            if (command.equals("jobs")) {
+                if (stderrFile != null) {
+                    writeToFile(stderrFile, "", appendStderr);
                 }
 
                 continue;
