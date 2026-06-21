@@ -52,16 +52,25 @@ public class Main {
             }
 
             if (input.equals("pwd")) {
-                System.out.println(currentDirectory.toAbsolutePath());
+                System.out.println(currentDirectory.normalize());
                 continue;
             }
 
             if (input.startsWith("cd ")) {
                 String target = input.substring(3).trim();
-                Path newPath = Paths.get(target);
+
+                Path newPath;
+
+                if (Paths.get(target).isAbsolute()) {
+                    newPath = Paths.get(target);
+                } else {
+                    newPath = currentDirectory.resolve(target);
+                }
+
+                newPath = newPath.normalize();
 
                 if (Files.isDirectory(newPath)) {
-                    currentDirectory = newPath.toAbsolutePath().normalize();
+                    currentDirectory = newPath;
                 } else {
                     System.out.println("cd: " + target + ": No such file or directory");
                 }
