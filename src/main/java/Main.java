@@ -16,6 +16,22 @@ public class Main {
 
     private static int nextJobId = 1;
 
+    private static class Job {
+        int jobId;
+        long pid;
+        String command;
+        Process process;
+
+        Job(int jobId, long pid, String command, Process process) {
+            this.jobId = jobId;
+            this.pid = pid;
+            this.command = command;
+            this.process = process;
+        }
+    }
+
+    private static final List<Job> jobs = new ArrayList<>();
+
     private static boolean isBuiltin(String command) {
         return command.equals("echo")
                 || command.equals("exit")
@@ -129,6 +145,11 @@ public class Main {
                 parts.remove(parts.size() - 1);
             }
 
+            String originalCommand = String.join(" ", parts);
+            if (runInBackground) {
+                originalCommand += " &";
+            }
+
             String stdoutFile = null;
             String stderrFile = null;
 
@@ -206,10 +227,6 @@ public class Main {
 
                 if (Files.isDirectory(newPath)) {
                     currentDirectory = newPath;
-
-                    if (stderrFile != null) {
-                        writeToFile(stderrFile, "", appendStderr);
-                    }
                 } else {
                     String error = "cd: " + target + ": No such file or directory\n";
 
@@ -224,6 +241,14 @@ public class Main {
             }
 
             if (command.equals("jobs")) {
+                for (Job job : jobs) {
+                    if (job.process.isAlive()) {
+                        System.out.printf("[%d]+  %-24s%s%n",
+                                job.jobId,
+                                "Running",
+                                job.command);
+                    }
+                }
                 continue;
             }
 
@@ -311,6 +336,7 @@ public class Main {
                 Process process = processBuilder.start();
 
                 if (runInBackground) {
+                    jobs.add(new Job(nextJobId, process.pid(), originalCommand, process));
                     System.out.println("[" + nextJobId++ + "] " + process.pid());
                 } else {
                     process.waitFor();
