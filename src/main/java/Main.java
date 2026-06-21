@@ -101,6 +101,20 @@ public class Main {
                 continue;
             }
 
+            String outputFile = null;
+
+            for (int i = 0; i < parts.size() - 1; i++) {
+                if (parts.get(i).equals(">") || parts.get(i).equals("1>")) {
+                    outputFile = parts.get(i + 1);
+                    parts = new ArrayList<>(parts.subList(0, i));
+                    break;
+                }
+            }
+
+            if (parts.isEmpty()) {
+                continue;
+            }
+
             String command = parts.get(0);
 
             if (command.equals("exit")) {
@@ -108,7 +122,14 @@ public class Main {
             }
 
             if (command.equals("pwd")) {
-                System.out.println(currentDirectory);
+                String output = currentDirectory.toString();
+
+                if (outputFile != null) {
+                    Files.writeString(Paths.get(outputFile), output + "\n");
+                } else {
+                    System.out.println(output);
+                }
+
                 continue;
             }
 
@@ -137,10 +158,14 @@ public class Main {
             }
 
             if (command.equals("echo")) {
-                if (parts.size() > 1) {
-                    System.out.println(String.join(" ", parts.subList(1, parts.size())));
+                String output = parts.size() > 1
+                        ? String.join(" ", parts.subList(1, parts.size()))
+                        : "";
+
+                if (outputFile != null) {
+                    Files.writeString(Paths.get(outputFile), output + "\n");
                 } else {
-                    System.out.println();
+                    System.out.println(output);
                 }
 
                 continue;
@@ -148,17 +173,24 @@ public class Main {
 
             if (command.equals("type")) {
                 String target = parts.get(1);
+                String output;
 
                 if (isBuiltin(target)) {
-                    System.out.println(target + " is a shell builtin");
+                    output = target + " is a shell builtin";
                 } else {
                     String executable = findExecutable(target);
 
                     if (executable != null) {
-                        System.out.println(target + " is " + executable);
+                        output = target + " is " + executable;
                     } else {
-                        System.out.println(target + ": not found");
+                        output = target + ": not found";
                     }
+                }
+
+                if (outputFile != null) {
+                    Files.writeString(Paths.get(outputFile), output + "\n");
+                } else {
+                    System.out.println(output);
                 }
 
                 continue;
@@ -170,7 +202,13 @@ public class Main {
                 ProcessBuilder processBuilder = new ProcessBuilder(parts);
 
                 processBuilder.directory(currentDirectory.toFile());
-                processBuilder.inheritIO();
+
+                if (outputFile != null) {
+                    processBuilder.redirectOutput(new File(outputFile));
+                    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
+                } else {
+                    processBuilder.inheritIO();
+                }
 
                 Process process = processBuilder.start();
                 process.waitFor();
