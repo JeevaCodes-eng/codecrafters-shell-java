@@ -1,5 +1,7 @@
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -8,7 +10,8 @@ public class Main {
     private static boolean isBuiltin(String command) {
         return command.equals("echo")
                 || command.equals("exit")
-                || command.equals("type");
+                || command.equals("type")
+                || command.equals("pwd");
     }
 
     private static String findExecutable(String command) {
@@ -34,6 +37,8 @@ public class Main {
     public static void main(String[] args) throws IOException, InterruptedException {
         Scanner scanner = new Scanner(System.in);
 
+        Path currentDirectory = Paths.get(System.getProperty("user.dir"));
+
         while (true) {
             System.out.print("$ ");
 
@@ -41,6 +46,11 @@ public class Main {
 
             if (input.equals("exit")) {
                 break;
+            }
+
+            if (input.equals("pwd")) {
+                System.out.println(currentDirectory.toAbsolutePath());
+                continue;
             }
 
             if (input.startsWith("echo ")) {
