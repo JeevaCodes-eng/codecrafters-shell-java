@@ -101,15 +101,24 @@ public class Main {
                 continue;
             }
 
-            String outputFile = null;
+            String stdoutFile = null;
+            String stderrFile = null;
 
-            for (int i = 0; i < parts.size() - 1; i++) {
-                if (parts.get(i).equals(">") || parts.get(i).equals("1>")) {
-                    outputFile = parts.get(i + 1);
-                    parts = new ArrayList<>(parts.subList(0, i));
-                    break;
+            List<String> commandParts = new ArrayList<>();
+
+            for (int i = 0; i < parts.size(); i++) {
+                String token = parts.get(i);
+
+                if ((token.equals(">") || token.equals("1>")) && i + 1 < parts.size()) {
+                    stdoutFile = parts.get(++i);
+                } else if (token.equals("2>") && i + 1 < parts.size()) {
+                    stderrFile = parts.get(++i);
+                } else {
+                    commandParts.add(token);
                 }
             }
+
+            parts = commandParts;
 
             if (parts.isEmpty()) {
                 continue;
@@ -122,14 +131,7 @@ public class Main {
             }
 
             if (command.equals("pwd")) {
-                String output = currentDirectory.toString();
-
-                if (outputFile != null) {
-                    Files.writeString(Paths.get(outputFile), output + "\n");
-                } else {
-                    System.out.println(output);
-                }
-
+                System.out.println(currentDirectory);
                 continue;
             }
 
@@ -151,7 +153,13 @@ public class Main {
                 if (Files.isDirectory(newPath)) {
                     currentDirectory = newPath;
                 } else {
-                    System.out.println("cd: " + target + ": No such file or directory");
+                    String error = "cd: " + target + ": No such file or directory";
+
+                    if (stderrFile != null) {
+                        Files.writeString(Paths.get(stderrFile), error + "\n");
+                    } else {
+                        System.err.println(error);
+                    }
                 }
 
                 continue;
@@ -162,8 +170,8 @@ public class Main {
                         ? String.join(" ", parts.subList(1, parts.size()))
                         : "";
 
-                if (outputFile != null) {
-                    Files.writeString(Paths.get(outputFile), output + "\n");
+                if (stdoutFile != null) {
+                    Files.writeString(Paths.get(stdoutFile), output + "\n");
                 } else {
                     System.out.println(output);
                 }
@@ -187,8 +195,8 @@ public class Main {
                     }
                 }
 
-                if (outputFile != null) {
-                    Files.writeString(Paths.get(outputFile), output + "\n");
+                if (stdoutFile != null) {
+                    Files.writeString(Paths.get(stdoutFile), output + "\n");
                 } else {
                     System.out.println(output);
                 }
@@ -203,17 +211,28 @@ public class Main {
 
                 processBuilder.directory(currentDirectory.toFile());
 
-                if (outputFile != null) {
-                    processBuilder.redirectOutput(new File(outputFile));
-                    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
+                if (stdoutFile != null) {
+                    processBuilder.redirectOutput(new File(stdoutFile));
                 } else {
-                    processBuilder.inheritIO();
+                    processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+                }
+
+                if (stderrFile != null) {
+                    processBuilder.redirectError(new File(stderrFile));
+                } else {
+                    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT);
                 }
 
                 Process process = processBuilder.start();
                 process.waitFor();
             } else {
-                System.out.println(command + ": command not found");
+                String error = command + ": command not found";
+
+                if (stderrFile != null) {
+                    Files.writeString(Paths.get(stderrFile), error + "\n");
+                } else {
+                    System.err.println(error);
+                }
             }
         }
 
