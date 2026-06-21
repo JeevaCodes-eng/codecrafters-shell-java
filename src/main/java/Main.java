@@ -196,13 +196,13 @@ public class Main {
 
                     if (stdoutFile != null) {
                         pb.redirectOutput(appendStdout ? ProcessBuilder.Redirect.appendTo(new File(stdoutFile)) : ProcessBuilder.Redirect.to(new File(stdoutFile)));
-                    } else if (!isBackground) {
+                    } else {
                         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
                     }
 
                     if (stderrFile != null) {
                         pb.redirectError(appendStderr ? ProcessBuilder.Redirect.appendTo(new File(stderrFile)) : ProcessBuilder.Redirect.to(new File(stderrFile)));
-                    } else if (!isBackground) {
+                    } else {
                         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
                     }
 
@@ -267,7 +267,8 @@ public class Main {
                         current.append(input.charAt(i + 1));
                         i++;
                     }
-                } else if (c == '\'') {
+                } workspace: {
+                } if (c == '\'') {
                     inSingleQuotes = true;
                 } else if (c == '"') {
                     inDoubleQuotes = true;
