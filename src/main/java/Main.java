@@ -44,9 +44,21 @@ public class Main {
 
         boolean inSingleQuotes = false;
         boolean inDoubleQuotes = false;
+        boolean escaping = false;
 
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
+
+            if (escaping) {
+                current.append(c);
+                escaping = false;
+                continue;
+            }
+
+            if (c == '\\' && !inSingleQuotes) {
+                escaping = true;
+                continue;
+            }
 
             if (c == '\'' && !inDoubleQuotes) {
                 inSingleQuotes = !inSingleQuotes;
@@ -130,6 +142,7 @@ public class Main {
                 } else {
                     System.out.println();
                 }
+
                 continue;
             }
 
