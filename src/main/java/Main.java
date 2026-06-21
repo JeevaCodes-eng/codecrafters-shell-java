@@ -14,6 +14,8 @@ public class Main {
     private static Path currentDirectory =
             Paths.get(System.getProperty("user.dir"));
 
+    private static int nextJobId = 1;
+
     private static boolean isBuiltin(String command) {
         return command.equals("echo")
                 || command.equals("exit")
@@ -94,15 +96,15 @@ public class Main {
             throws IOException {
 
         OpenOption[] options = append
-                ? new OpenOption[] {
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.APPEND
-                }
-                : new OpenOption[] {
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.TRUNCATE_EXISTING,
-                        StandardOpenOption.WRITE
-                };
+                ? new OpenOption[]{
+                StandardOpenOption.CREATE,
+                StandardOpenOption.APPEND
+        }
+                : new OpenOption[]{
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE
+        };
 
         Files.writeString(Paths.get(file), content, options);
     }
@@ -118,6 +120,13 @@ public class Main {
 
             if (parts.isEmpty()) {
                 continue;
+            }
+
+            boolean runInBackground = false;
+
+            if (parts.get(parts.size() - 1).equals("&")) {
+                runInBackground = true;
+                parts.remove(parts.size() - 1);
             }
 
             String stdoutFile = null;
@@ -214,6 +223,10 @@ public class Main {
                 continue;
             }
 
+            if (command.equals("jobs")) {
+                continue;
+            }
+
             if (command.equals("echo")) {
                 if (stderrFile != null) {
                     writeToFile(stderrFile, "", appendStderr);
@@ -261,14 +274,6 @@ public class Main {
                 continue;
             }
 
-            if (command.equals("jobs")) {
-                if (stderrFile != null) {
-                    writeToFile(stderrFile, "", appendStderr);
-                }
-
-                continue;
-            }
-
             String executable = findExecutable(command);
 
             if (executable != null) {
@@ -299,7 +304,12 @@ public class Main {
                 }
 
                 Process process = processBuilder.start();
-                process.waitFor();
+
+                if (runInBackground) {
+                    System.out.println("[" + nextJobId++ + "] " + process.pid());
+                } else {
+                    process.waitFor();
+                }
 
             } else {
                 String error = command + ": command not found\n";
